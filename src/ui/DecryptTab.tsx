@@ -11,6 +11,7 @@ import {
   multiplyExact,
 } from "../cipher/matrix";
 import { type Fraction, isInteger } from "../cipher/rational";
+import { ClearButton } from "./ClearButton";
 import { CrackResults } from "./CrackResults";
 import { MathSymbol, MatrixInput, MatrixView } from "./Matrix";
 import { blankCells, isBlank, parseCipher, parseDecryptionKey } from "./parse";
@@ -65,6 +66,11 @@ function CipherEditor({
       >
         +
       </button>
+      <ClearButton
+        label="Clear C"
+        disabled={isBlank(cells)}
+        onClear={() => onChange(blankCells(2, DEFAULT_COLUMNS))}
+      />
     </div>
   );
 }
@@ -138,6 +144,11 @@ export function DecryptTab({
           values={keyCells}
           onChange={setKeyCells}
           invalid={key.invalid}
+        />
+        <ClearButton
+          label="Clear D"
+          disabled={cracking}
+          onClear={() => setKeyCells(blankCells(2, 2))}
         />
       </div>
 
