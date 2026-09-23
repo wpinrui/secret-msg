@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { Matrix } from "../cipher/matrix";
 import type { Fraction } from "../cipher/rational";
+import { pasteIntoMatrix } from "./paste";
 
 function Brackets({
   columns,
@@ -32,11 +33,14 @@ export function MatrixInput({
   values,
   onChange,
   invalid,
+  maxColumns,
 }: {
   label: string;
   values: Matrix<string>;
   onChange: (values: Matrix<string>) => void;
   invalid?: Matrix<boolean>;
+  /** Lets a paste grow or shrink the matrix up to this many columns. */
+  maxColumns?: number;
 }) {
   const update = (r: number, c: number, text: string) =>
     onChange(
@@ -44,6 +48,8 @@ export function MatrixInput({
         i === r ? row.map((cell, j) => (j === c ? text : cell)) : row,
       ),
     );
+  const paste = (r: number, c: number, text: string) =>
+    pasteIntoMatrix(values, text, { row: r, column: c, maxColumns });
   return (
     <Brackets columns={values[0].length} label={label}>
       {cells(values).map(({ value, r, c }) => (
@@ -56,6 +62,12 @@ export function MatrixInput({
           autoComplete="off"
           value={value}
           onChange={(event) => update(r, c, event.target.value)}
+          onPaste={(event) => {
+            const next = paste(r, c, event.clipboardData.getData("text"));
+            if (!next) return;
+            event.preventDefault();
+            onChange(next);
+          }}
         />
       ))}
     </Brackets>
