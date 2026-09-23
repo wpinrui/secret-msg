@@ -12,6 +12,7 @@ import {
   multiply,
   toTextMatrix,
 } from "../cipher/matrix";
+import { ClearButton } from "./ClearButton";
 import { CopyButton } from "./CopyButton";
 import { MathSymbol, MatrixInput, MatrixView } from "./Matrix";
 import { parseKey, toCells } from "./parse";
@@ -82,6 +83,14 @@ export function EncryptTab({
           maxLength={MAX_MESSAGE_LENGTH}
           value={message}
           onChange={(event) => setMessage(sanitizeMessage(event.target.value))}
+        />
+        <ClearButton
+          label="Clear message"
+          disabled={message === ""}
+          onClear={() => {
+            setMessage("");
+            messageInput.current?.focus();
+          }}
         />
       </div>
 
