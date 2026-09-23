@@ -19,27 +19,29 @@ export interface CrackResult {
   candidates: Candidate[];
 }
 
+/** Entries a, b, c, d of the key [[a, b], [c, d]], reused across the search. */
+type KeyEntries = Int32Array;
+
 /** Returns T = E⁻¹C when every entry is a whole number in 0..MAX_SYMBOL. */
 function tryKey(
-  a: number,
-  b: number,
-  c: number,
-  d: number,
-  top: number[],
-  bottom: number[],
+  key: KeyEntries,
+  cipher: Matrix<number>,
 ): Matrix<number> | null {
+  // Indexed reads: destructuring a typed array goes through its iterator,
+  // which is measurably slower across 10⁸ calls.
+  const a = key[0];
+  const b = key[1];
+  const c = key[2];
+  const d = key[3];
+  const top = cipher[0];
+  const bottom = cipher[1];
   const det = a * d - b * c;
   if (det === 0) return null;
-  const k = top.length;
-  for (let j = 0; j < k; j++) {
-    const n1 = d * top[j] - b * bottom[j];
-    if (n1 % det !== 0) return null;
-    const t1 = n1 / det;
-    if (t1 < 0 || t1 > MAX_SYMBOL) return null;
-    const n2 = a * bottom[j] - c * top[j];
-    if (n2 % det !== 0) return null;
-    const t2 = n2 / det;
-    if (t2 < 0 || t2 > MAX_SYMBOL) return null;
+  for (let j = 0; j < top.length; j++) {
+    const t1 = (d * top[j] - b * bottom[j]) / det;
+    if (!Number.isInteger(t1) || t1 < 0 || t1 > MAX_SYMBOL) return null;
+    const t2 = (a * bottom[j] - c * top[j]) / det;
+    if (!Number.isInteger(t2) || t2 < 0 || t2 > MAX_SYMBOL) return null;
   }
   // Validated above; built only now so rejected keys allocate nothing.
   return [
@@ -48,54 +50,63 @@ function tryKey(
   ];
 }
 
+/** Advances the key like an odometer; returns false after the last key. */
+function nextKey(key: KeyEntries): boolean {
+  for (let i = key.length - 1; i >= 0; i--) {
+    if (++key[i] <= KEY_MAX) return true;
+    key[i] = 0;
+  }
+  return false;
+}
+
+type Group = Omit<Candidate, "message" | "score">;
+
+function record(
+  groups: Map<string, Group>,
+  t: Matrix<number>,
+  key: KeyEntries,
+) {
+  const id = t.join(";");
+  let group = groups.get(id);
+  if (!group) {
+    group = { t, keys: [], keyCount: 0 };
+    groups.set(id, group);
+  }
+  group.keyCount++;
+  if (group.keys.length < KEYS_PER_CANDIDATE) {
+    group.keys.push([
+      [key[0], key[1]],
+      [key[2], key[3]],
+    ]);
+  }
+}
+
 /**
  * Tries every key E with entries in 0..KEY_MAX and det ≠ 0, keeps those that
  * decode C to a valid T, groups them by T and ranks the messages.
- * onProgress receives the fraction of keys tried so far.
+ * onProgress receives the fraction of keys tried, once per value of E's first entry.
  */
 export function crack(
   cipher: Matrix<number>,
   onProgress: (done: number) => void = () => {},
   dictionary: Set<string> = DICTIONARY,
 ): CrackResult {
-  const [top, bottom] = cipher;
-  const groups = new Map<string, Candidate>();
-  const size = KEY_MAX + 1;
-
-  for (let a = 0; a < size; a++) {
-    onProgress(a / size);
-    for (let b = 0; b < size; b++) {
-      for (let c = 0; c < size; c++) {
-        for (let d = 0; d < size; d++) {
-          const t = tryKey(a, b, c, d, top, bottom);
-          if (!t) continue;
-          const id = t.join(";");
-          let group = groups.get(id);
-          if (!group) {
-            const message = decodeSymbols(fromTextMatrix(t));
-            group = {
-              message,
-              t,
-              score: scoreMessage(message, dictionary),
-              keys: [],
-              keyCount: 0,
-            };
-            groups.set(id, group);
-          }
-          group.keyCount++;
-          if (group.keys.length < KEYS_PER_CANDIDATE) {
-            group.keys.push([
-              [a, b],
-              [c, d],
-            ]);
-          }
-        }
-      }
+  const groups = new Map<string, Group>();
+  const key: KeyEntries = new Int32Array(4);
+  do {
+    if (key[1] === 0 && key[2] === 0 && key[3] === 0) {
+      onProgress(key[0] / (KEY_MAX + 1));
     }
-  }
+    const t = tryKey(key, cipher);
+    if (t) record(groups, t, key);
+  } while (nextKey(key));
   onProgress(1);
 
   const candidates = [...groups.values()]
+    .map((group) => {
+      const message = decodeSymbols(fromTextMatrix(group.t));
+      return { ...group, message, score: scoreMessage(message, dictionary) };
+    })
     .sort((x, y) => compareScores(x.score, y.score))
     .slice(0, TOP_CANDIDATES);
   return { candidates };
