@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   encodeMessage,
   MAX_MESSAGE_LENGTH,
@@ -12,6 +12,7 @@ import {
   multiply,
   toTextMatrix,
 } from "../cipher/matrix";
+import { CopyButton } from "./CopyButton";
 import { MathSymbol, MatrixInput, MatrixView } from "./Matrix";
 import { parseKey, toCells } from "./parse";
 
@@ -59,6 +60,9 @@ export function EncryptTab({
     toCells(randomUnimodularKey()),
   );
 
+  const messageInput = useRef<HTMLInputElement>(null);
+  useEffect(() => messageInput.current?.focus(), []);
+
   const key = parseKey(keyCells);
   const singular = key.value !== null && det2(key.value) === 0;
   const e = singular ? null : key.value;
@@ -70,6 +74,7 @@ export function EncryptTab({
       <div className="equation">
         <MathSymbol name="M" />
         <input
+          ref={messageInput}
           className="message"
           aria-label="Message"
           autoComplete="off"
@@ -83,7 +88,7 @@ export function EncryptTab({
       {t && (
         <div className="equation">
           <MathSymbol name="T" />
-          <MatrixView label="T" values={t} />
+          <MatrixView label="T" values={t} letters />
         </div>
       )}
 
@@ -113,6 +118,11 @@ export function EncryptTab({
           <MathSymbol name="C" />
           <MathSymbol name="ET" />
           <MatrixView label="C" values={c} />
+          {/* Rows on lines, tab-separated: the format a paste into C reads. */}
+          <CopyButton
+            label="Copy C"
+            text={c.map((row) => row.join("\t")).join("\n")}
+          />
           <button type="button" onClick={() => onDecrypt(c)}>
             Decrypt →
           </button>

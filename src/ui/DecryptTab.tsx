@@ -134,6 +134,7 @@ export function DecryptTab({
         <MathSymbol name="D" />
         <MatrixInput
           label="D"
+          inputMode="text"
           values={keyCells}
           onChange={setKeyCells}
           invalid={key.invalid}
@@ -169,7 +170,7 @@ function Decryption({
       <div className="equation">
         <MathSymbol name="T" />
         <MathSymbol name="DC" />
-        <MatrixView label="T" values={t} flagged={flagged} />
+        <MatrixView label="T" values={t} flagged={flagged} letters />
       </div>
       {valid ? (
         <div className="equation">
