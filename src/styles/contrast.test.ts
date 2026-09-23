@@ -28,6 +28,7 @@ const FOREGROUNDS: { name: string; floor: number }[] = [
   { name: "text", floor: AA_TEXT },
   { name: "text-muted", floor: AA_TEXT },
   { name: "accent", floor: AA_UI },
+  { name: "danger", floor: AA_TEXT },
 ];
 
 describe("contrast gate", () => {
