@@ -43,6 +43,7 @@ function CipherEditor({
         values={cells}
         onChange={onChange}
         invalid={invalid}
+        maxColumns={MAX_COLUMNS}
       />
       <button
         type="button"

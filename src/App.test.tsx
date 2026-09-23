@@ -85,4 +85,23 @@ describe("App", () => {
       screen.getByText("T must be whole numbers from 0 to 26"),
     ).toBeTruthy();
   });
+
+  it("spreads pasted numbers across C row by row", () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("tab", { name: "Decrypt" }));
+    fireEvent.paste(screen.getByLabelText("C row 1 column 1"), {
+      clipboardData: {
+        getData: () => "1227\n207\n1395\n45\n1498\n253\n1703\n55",
+      },
+    });
+    expect(screen.getByLabelText("C row 1 column 4")).toHaveProperty(
+      "value",
+      "45",
+    );
+    expect(screen.getByLabelText("C row 2 column 1")).toHaveProperty(
+      "value",
+      "1498",
+    );
+    expect(screen.queryByLabelText("C row 1 column 5")).toBeNull();
+  });
 });
