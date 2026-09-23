@@ -18,9 +18,10 @@ export function encodeMessage(message: string): number[] {
   );
 }
 
+export function symbolToChar(n: number): string {
+  return n === 0 ? " " : String.fromCharCode(A_CODE + n - 1);
+}
+
 export function decodeSymbols(symbols: number[]): string {
-  return symbols
-    .map((n) => (n === 0 ? " " : String.fromCharCode(A_CODE + n - 1)))
-    .join("")
-    .trimEnd();
+  return symbols.map(symbolToChar).join("").trimEnd();
 }

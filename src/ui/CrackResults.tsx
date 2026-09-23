@@ -27,7 +27,7 @@ function CandidateRow({ candidate }: { candidate: Candidate }) {
       </div>
       <div className="equation">
         <MathSymbol name="T" />
-        <MatrixView label="T" values={candidate.t} />
+        <MatrixView label="T" values={candidate.t} letters />
       </div>
       <KeyPair keyMatrix={first} />
       {candidate.keyCount > 1 && (
